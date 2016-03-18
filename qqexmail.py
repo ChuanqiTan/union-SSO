@@ -16,11 +16,16 @@ class ExmailWrapper:
         self.client_secret = client_secret
         self._token = ''
         self._token_expire = 0
+        self._token_usetime = 0
 
 
     def _callAPI(self, url, p):
         if not 'access_token' in p:
             p['access_token'] = self._getAccessToken()
+            if p['access_token'] == '':
+                # cannot get valid access token
+                return False
+
         if 'alias' in p:
             p['alias'] = self._getActualEmail(p['alias'])
         #print p
@@ -53,17 +58,25 @@ class ExmailWrapper:
 
     def _getAccessToken(self):
         ''' 获取访问key '''
-        if self._token == '' or self._token_expire < time.time():
+        if self._token == '' or self._token_usetime >= 3 or self._token_expire <= time.time():
             # 不在有效期
+            self._token = ''
+            self._token_expire = 0
+            self._token_usetime = 0
+
             p = { 
                     'grant_type' : 'client_credentials', 
                     'client_id' : self.client_id,
                     'client_secret' : self.client_secret
                 }
-            r = requests.post('https://exmail.qq.com/cgi-bin/token', params = p).json()
-            self._token = r['access_token']
-            self._token_expire = int(time.time()) + int(r['expires_in']) / 1000 / 2
+            r = requests.post('https://exmail.qq.com/cgi-bin/token', params = p)
 
+            if r.ok:
+                r = r.json()
+                self._token = r['access_token']
+                self._token_expire = int(time.time()) + int(r['expires_in']) / 1000 / 2
+
+        self._token_usetime += 1
         return self._token
 
 
@@ -96,7 +109,10 @@ class ExmailWrapper:
     def getUnreadEmailNumber(self, user_email):
         ''' 得到未读邮件数目 '''
         j = self._callAPI('/mail/newcount', {'alias' : user_email})
-        return j['NewCount']
+        if j and 'NewCount' in j:
+            return j['NewCount']
+        else:
+            return ""
 
 
     def addUser(self, user_email, cn_name, pwd):
