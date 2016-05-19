@@ -171,11 +171,16 @@ class LdapWrapper:
         else:
             return False
 
+    def resetPassword(self, email, new_pwd):
+        if self.update(email, {'userPassword' : new_pwd}):
+            return True
+        else:
+            return False
+
 
     def changePassword(self, email, old_pwd, new_pwd):
         if self.checkPassword(email, old_pwd):
-            if self.update(email, {'userPassword' : new_pwd}):
-                return True
+            return self.resetPassword(email, new_pwd)
         return False
 
 
