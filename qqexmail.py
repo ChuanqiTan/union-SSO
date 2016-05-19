@@ -5,6 +5,7 @@
 import requests
 import json
 import time
+import sys
 
 
 class ExmailWrapper:
@@ -28,15 +29,17 @@ class ExmailWrapper:
 
         if 'alias' in p:
             p['alias'] = self._getActualEmail(p['alias'])
-        #print p
+        #print url, p
         #print p['access_token']
 
         r = requests.post(self.API_POINT + url, params=p)
         #time.sleep(0.01)
         #print r
+        #sys.stdout.flush()
         if r.ok:
             try: 
                 j = r.json() 
+                #print 'rtv: ', j
                 return j
             except Exception:
                 return True
@@ -58,7 +61,7 @@ class ExmailWrapper:
 
     def _getAccessToken(self):
         ''' 获取访问key '''
-        if self._token == '' or self._token_usetime >= 3 or self._token_expire <= time.time():
+        if self._token == '' or self._token_usetime >= 1 or self._token_expire <= time.time():
             # 不在有效期
             self._token = ''
             self._token_expire = 0
@@ -77,13 +80,17 @@ class ExmailWrapper:
                 self._token_expire = int(time.time()) + int(r['expires_in']) / 1000 / 2
 
         self._token_usetime += 1
+        #print "TOKEN: ", self._token, ' EXPIRE: ', self._token_expire
+        #sys.stdout.flush()
         return self._token
 
 
     def _getUserAuthkey(self, user_email):
         ''' 用access_token换取用户授权key '''
         j = self._callAPI('/mail/authkey', {'alias' : user_email})
-        if 'auth_key' in j:
+        print '_getUserAuthkey:', j
+        #sys.stdout.flush()
+        if j and 'auth_key' in j:
             return j['auth_key']
         else:
             return False
@@ -97,6 +104,8 @@ class ExmailWrapper:
     def getOnekeyLoginUrl(self, user_email):
         ''' 一键登陆 '''
         authkey = self._getUserAuthkey(user_email)
+        #print 'AUTHKEY: ', authkey
+        #sys.stdout.flush()
         if authkey != "":
             onekey_login_url = "https://exmail.qq.com/cgi-bin/login?fun=bizopenssologin&method=bizauth\
 &agent={0}&user={1}&ticket={2}".format(
