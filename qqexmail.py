@@ -21,29 +21,33 @@ class ExmailWrapper:
 
 
     def _callAPI(self, url, p):
-        if not 'access_token' in p:
-            p['access_token'] = self._getAccessToken()
-            if p['access_token'] == '':
-                # cannot get valid access token
+        try:
+            if not 'access_token' in p:
+                p['access_token'] = self._getAccessToken()
+                if p['access_token'] == '':
+                    # cannot get valid access token
+                    return False
+
+            if 'alias' in p:
+                p['alias'] = self._getActualEmail(p['alias'])
+            #print url, p
+            #print p['access_token']
+
+            r = requests.post(self.API_POINT + url, params=p)
+            #time.sleep(0.01)
+            #print r
+            #sys.stdout.flush()
+            if r.ok:
+                try: 
+                    j = r.json() 
+                    #print 'rtv: ', j
+                    return j
+                except Exception:
+                    return True
+            else:
                 return False
-
-        if 'alias' in p:
-            p['alias'] = self._getActualEmail(p['alias'])
-        #print url, p
-        #print p['access_token']
-
-        r = requests.post(self.API_POINT + url, params=p)
-        #time.sleep(0.01)
-        #print r
-        #sys.stdout.flush()
-        if r.ok:
-            try: 
-                j = r.json() 
-                #print 'rtv: ', j
-                return j
-            except Exception:
-                return True
-        else:
+        except Exception, ex:
+            print 'EXCEPTION in _callAPI:', ex
             return False
 
 
@@ -95,6 +99,15 @@ class ExmailWrapper:
         else:
             return False
 
+
+    def getEmployeesListInGroup(self, group_name):
+        j = self._callAPI('/partyuser/list', {'partypath' : group_name})
+        print j
+        if j and 'List' in j:
+            return j['List']
+        else:
+            return []
+        
 
     def getUserInfo(self, user_email):
         ''' 获取用户信息 '''

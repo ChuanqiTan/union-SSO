@@ -92,6 +92,8 @@ class LdapWrapper:
                 'mail': [mail], 
                 'givenName' : [givenName],
                 'sn' : [sn],
+                'initials' : [eng_first_name],
+                'displayName' : [eng_last_name],
                 'userPassword' : [userPassword],
                 'objectClass': objectClass })
             #print modlist #显示格式化数据项，格式化后是一个元组列表 
